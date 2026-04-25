@@ -3,12 +3,14 @@ import { DakeraMemory } from "../src/memory.js";
 
 // Mock @dakera-ai/dakera so tests don't need a live server
 vi.mock("@dakera-ai/dakera", () => ({
-  DakeraClient: vi.fn().mockImplementation(() => ({
-    recall: vi.fn().mockResolvedValue([
-      { content: "Human: hi\nAI: hello", importance: 0.7, score: 0.9 },
-    ]),
-    storeMemory: vi.fn().mockResolvedValue({ memory_id: "mem_1", status: "ok" }),
-  })),
+  DakeraClient: vi.fn().mockImplementation(function () {
+    return {
+      recall: vi.fn().mockResolvedValue([
+        { content: "Human: hi\nAI: hello", importance: 0.7, score: 0.9 },
+      ]),
+      storeMemory: vi.fn().mockResolvedValue({ memory_id: "mem_1", status: "ok" }),
+    };
+  }),
 }));
 
 describe("DakeraMemory", () => {

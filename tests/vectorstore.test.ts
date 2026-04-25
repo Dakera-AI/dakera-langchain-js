@@ -4,15 +4,17 @@ import { DakeraVectorStore } from "../src/vectorstore.js";
 
 // Mock @dakera-ai/dakera
 vi.mock("@dakera-ai/dakera", () => ({
-  DakeraClient: vi.fn().mockImplementation(() => ({
-    upsertText: vi.fn().mockResolvedValue({ upserted: 2 }),
-    queryText: vi.fn().mockResolvedValue({
-      results: [
-        { id: "doc1", text: "Hello world", score: 0.95, metadata: { source: "test" } },
-        { id: "doc2", text: "Foo bar", score: 0.80, metadata: {} },
-      ],
-    }),
-  })),
+  DakeraClient: vi.fn().mockImplementation(function () {
+    return {
+      upsertText: vi.fn().mockResolvedValue({ upserted: 2 }),
+      queryText: vi.fn().mockResolvedValue({
+        results: [
+          { id: "doc1", text: "Hello world", score: 0.95, metadata: { source: "test" } },
+          { id: "doc2", text: "Foo bar", score: 0.80, metadata: {} },
+        ],
+      }),
+    };
+  }),
 }));
 
 const storeOptions = {
