@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/Dakera-AI/dakera-langchain-js/actions/workflows/ci.yml/badge.svg)](https://github.com/Dakera-AI/dakera-langchain-js/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/@dakera-ai/langchain)](https://www.npmjs.com/package/@dakera-ai/langchain)
+[![Downloads](https://img.shields.io/npm/dm/@dakera-ai/langchain)](https://www.npmjs.com/package/@dakera-ai/langchain)
 [![Node](https://img.shields.io/node/v/@dakera-ai/langchain)](https://www.npmjs.com/package/@dakera-ai/langchain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
