@@ -44,15 +44,15 @@
     "url": "https://github.com/dakera-ai/dakera-langchain-js/issues"
   },
   "peerDependencies": {
-    "@dakera-ai/dakera": ">=0.8.6",
+    "@dakera-ai/dakera": ">=0.11.54",
     "@langchain/core": ">=1.1.0"
   },
   "devDependencies": {
-    "@dakera-ai/dakera": "^0.8.6",
+    "@dakera-ai/dakera": "^0.11.54",
     "@langchain/core": "^1.1.41",
     "@types/node": "^25.7.0",
     "tsup": "^8.0.0",
-    "typescript": "^5.4.0",
+    "typescript": "^5.9.3",
     "vitest": "^4.1.5"
   },
   "engines": {
