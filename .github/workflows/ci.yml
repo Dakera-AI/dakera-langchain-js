@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         node-version: ["20", "22"]
-        langchain-version: ["latest", "0.2.0"]
+        langchain-version: ["latest"]
 
     steps:
       - uses: actions/checkout@v4
