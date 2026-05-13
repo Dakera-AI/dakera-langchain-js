@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Security
+- **CVE GHSA-3644-q5cj-c5c7**: bumped transitive dependency `langsmith` from 0.5.25 to ≥0.6.0 via `overrides`. Fixes "Public prompt pull deserializes untrusted manifests without trust boundary warning" (High severity).
+
 ## [0.1.1] - 2026-05-13
 
 ### Fixed
