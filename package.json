@@ -48,7 +48,7 @@
     "@langchain/core": ">=1.1.0"
   },
   "devDependencies": {
-    "@dakera-ai/dakera": "^0.8.6",
+    "@dakera-ai/dakera": "^0.11.54",
     "@langchain/core": "^1.1.41",
     "@types/node": "^25.7.0",
     "tsup": "^8.0.0",
