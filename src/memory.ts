@@ -104,9 +104,9 @@ export class DakeraMemory extends BaseMemory {
     if (this.minImportance > 0) {
       recallOpts.min_importance = this.minImportance;
     }
-    const memories = await this.client.recall(this.agentId, query, recallOpts);
+    const response = await this.client.recall(this.agentId, query, recallOpts);
 
-    const history = memories
+    const history = (response.memories ?? [])
       .map((m) => (typeof m === "object" && "content" in m ? m.content : String(m)))
       .join("\n");
 
