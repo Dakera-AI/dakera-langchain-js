@@ -58,6 +58,10 @@
   "engines": {
     "node": ">=20"
   },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "public"
+  },
   "overrides": {
     "uuid": "^14.0.0"
   }
