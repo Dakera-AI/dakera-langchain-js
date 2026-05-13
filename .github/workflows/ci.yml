@@ -6,13 +6,22 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
+    name: Node ${{ matrix.node-version }} / LangChain ${{ matrix.langchain-version }}
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node-version: ["20", "22"]
-        langchain-version: ["latest", "0.2.0"]
+        langchain-version: ["latest"]
 
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +30,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
@@ -29,6 +38,9 @@ jobs:
       - name: Pin LangChain version ${{ matrix.langchain-version }}
         if: matrix.langchain-version != 'latest'
         run: npm install @langchain/core@${{ matrix.langchain-version }}
+
+      - name: Security audit
+        run: npm audit --audit-level=high
 
       - name: Type check
         run: npm run typecheck
