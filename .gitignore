@@ -4,3 +4,12 @@ dist/
 .vite/
 *.db
 *.sqlite
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+credentials.json
