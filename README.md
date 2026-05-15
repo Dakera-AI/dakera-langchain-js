@@ -210,8 +210,8 @@ const store = await DakeraVectorStore.fromTexts(
 
 - [Dakera Server](https://github.com/Dakera-AI/dakera-deploy) — self-hosted memory server
 - [Dakera JS SDK](https://github.com/Dakera-AI/dakera-js) — low-level API client
-- [Documentation](https://dakera.ai/integrations/langchain-js)
-- [All integrations](https://github.com/Dakera-AI/dakera-integrations)
+- [Integration guide](https://dakera.ai/integrations/langchain-js.html) — full setup walkthrough
+- [All integrations](https://dakera.ai/integrations/)
 
 ---
 
