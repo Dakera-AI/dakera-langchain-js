@@ -5,6 +5,7 @@
 [![Downloads](https://img.shields.io/npm/dm/@dakera-ai/langchain)](https://www.npmjs.com/package/@dakera-ai/langchain)
 [![Node](https://img.shields.io/node/v/@dakera-ai/langchain)](https://www.npmjs.com/package/@dakera-ai/langchain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![dakera.ai](https://img.shields.io/badge/dakera.ai-website-22c55e?style=flat-square)](https://dakera.ai) [![Docs](https://img.shields.io/badge/docs-dakera.ai%2Fdocs-3b82f6?style=flat-square)](https://dakera.ai/docs)
 [![Docs](https://img.shields.io/badge/docs-dakera.ai-D4A843)](https://dakera.ai/docs)
 
 **LangChain.js integration for [Dakera](https://github.com/Dakera-AI/dakera-deploy) — persistent semantic memory and server-side vector search, no local embedding model required.**
@@ -219,3 +220,11 @@ const store = await DakeraVectorStore.fromTexts(
 ## License
 
 MIT © [Dakera AI](https://dakera.ai)
+
+---
+
+<div align="center">
+
+**[dakera.ai](https://dakera.ai)** · [Documentation](https://dakera.ai/docs) · [Request Early Access](https://dakera.ai#cta)
+
+</div>
