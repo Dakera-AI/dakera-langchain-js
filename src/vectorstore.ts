@@ -142,6 +142,43 @@ export class DakeraVectorStore extends VectorStore {
     return results.map(([doc]) => doc);
   }
 
+  /**
+   * Combined vector + BM25 hybrid search with configurable alpha weighting.
+   */
+  async hybridSearch(
+    query: string,
+    k = 4,
+    options?: { filter?: this["FilterType"]; alpha?: number },
+  ): Promise<Document[]> {
+    const response = await this.dakeraClient.hybridSearch(this.namespace, query, {
+      topK: k,
+      ...(options?.filter !== undefined ? { filter: options.filter as import("@dakera-ai/dakera").FilterExpression } : {}),
+      alpha: options?.alpha ?? 0.5,
+    });
+    return response.results.map((r) =>
+      new Document({
+        pageContent: r.text ?? "",
+        metadata: { ...(r.metadata ?? {}), score: r.score, id: r.id },
+      }),
+    );
+  }
+
+  /**
+   * BM25-only fulltext search.
+   */
+  async fulltextSearch(query: string, k = 10, filter?: this["FilterType"]): Promise<Document[]> {
+    const response = await this.dakeraClient.fulltextSearch(this.namespace, query, {
+      topK: k,
+      ...(filter !== undefined ? { filter: filter as import("@dakera-ai/dakera").FilterExpression } : {}),
+    });
+    return response.results.map((r) =>
+      new Document({
+        pageContent: r.text ?? "",
+        metadata: { ...(r.metadata ?? {}), score: r.score, id: r.id },
+      }),
+    );
+  }
+
   private async _textSearchWithScore(
     query: string,
     k: number,
