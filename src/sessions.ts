@@ -28,17 +28,16 @@ export interface DakeraSessionManagerOptions {
 export interface SessionInfo {
   id: string;
   agentId: string;
-  startedAt: number;
-  endedAt: number | null;
+  startedAt: number | undefined;
+  endedAt: number | undefined;
   metadata: Record<string, unknown>;
-  memoryCount: number;
+  memoryCount: number | undefined;
 }
 
 export interface SessionMemory {
   id: string;
   content: string;
   importance: number;
-  tags: string[];
 }
 
 export class DakeraSessionManager {
@@ -59,16 +58,16 @@ export class DakeraSessionManager {
   }
 
   async start(metadata?: Record<string, unknown>): Promise<string> {
-    const result = await this.client.startSession(this.agentId, { metadata });
-    this.activeSessionId = result.session_id;
-    return result.session_id;
+    const result = await this.client.startSession(this.agentId, metadata);
+    this.activeSessionId = result.id;
+    return result.id;
   }
 
-  async end(summary?: string): Promise<void> {
+  async end(_summary?: string): Promise<void> {
     if (!this.activeSessionId) {
       throw new Error("No active session to end");
     }
-    await this.client.endSession(this.activeSessionId, { summary });
+    await this.client.endSession(this.activeSessionId);
     this.activeSessionId = null;
   }
 
@@ -85,8 +84,11 @@ export class DakeraSessionManager {
   }
 
   async list(activeOnly = false): Promise<SessionInfo[]> {
-    const result = await this.client.listSessions(this.agentId, { active_only: activeOnly });
-    return (result.sessions ?? []).map((s) => ({
+    const result = await this.client.listSessions({
+      agent_id: this.agentId,
+      active_only: activeOnly,
+    });
+    return result.map((s) => ({
       id: s.id,
       agentId: s.agent_id,
       startedAt: s.started_at,
@@ -98,11 +100,10 @@ export class DakeraSessionManager {
 
   async memories(sessionId: string): Promise<SessionMemory[]> {
     const result = await this.client.sessionMemories(sessionId);
-    return (result.memories ?? []).map((m) => ({
+    return result.map((m) => ({
       id: m.id,
       content: m.content,
       importance: m.importance,
-      tags: m.tags ?? [],
     }));
   }
 }

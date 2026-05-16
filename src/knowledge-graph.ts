@@ -12,11 +12,11 @@
  * });
  *
  * const graph = await kg.build();
- * const results = await kg.query("What entities relate to project X?");
+ * const results = await kg.query();
  * ```
  */
 
-import { DakeraClient } from "@dakera-ai/dakera";
+import { DakeraClient, type AgentId, agentId } from "@dakera-ai/dakera";
 
 export interface DakeraKnowledgeGraphOptions {
   apiUrl: string;
@@ -25,8 +25,9 @@ export interface DakeraKnowledgeGraphOptions {
 }
 
 export interface GraphResult {
-  nodes: unknown[];
   edges: unknown[];
+  nodeCount: number;
+  edgeCount: number;
 }
 
 export class DakeraKnowledgeGraph {
@@ -41,43 +42,56 @@ export class DakeraKnowledgeGraph {
     this.agentId = options.agentId;
   }
 
-  async query(query: string): Promise<GraphResult> {
-    const result = await this.client.knowledgeQuery(this.agentId, { query });
-    return { nodes: result.nodes ?? [], edges: result.edges ?? [] };
+  async query(options?: {
+    rootId?: string;
+    edgeType?: string;
+    maxDepth?: number;
+    limit?: number;
+  }): Promise<GraphResult> {
+    const result = await this.client.knowledgeQuery(this.agentId, options);
+    return {
+      edges: result.edges ?? [],
+      nodeCount: result.node_count,
+      edgeCount: result.edge_count,
+    };
   }
 
-  async traverse(entityId: string, depth = 2, direction = "both"): Promise<GraphResult> {
-    const result = await this.client.knowledgePath(this.agentId, {
-      source: entityId,
-      depth,
-      direction,
+  async path(fromId: string, toId: string): Promise<unknown> {
+    return this.client.knowledgePath(this.agentId, fromId, toId);
+  }
+
+  async link(memoryId: string, entityId: string, relation?: string): Promise<void> {
+    await this.client.memoryLink(
+      memoryId,
+      entityId,
+      (relation ?? "related_to") as "related_to",
+    );
+  }
+
+  async export(format?: string): Promise<GraphResult> {
+    const result = await this.client.knowledgeExport(this.agentId, format);
+    return {
+      edges: result.edges ?? [],
+      nodeCount: result.node_count,
+      edgeCount: result.edge_count,
+    };
+  }
+
+  async build(): Promise<unknown> {
+    return this.client.knowledgeGraph({
+      agent_id: agentId(this.agentId) as AgentId,
     });
-    return { nodes: result.nodes ?? [], edges: result.edges ?? [] };
-  }
-
-  async link(memoryId: string, entityId: string, relation = "relates_to"): Promise<void> {
-    await this.client.memoryLink(this.agentId, {
-      memory_id: memoryId,
-      entity_id: entityId,
-      relation,
-    });
-  }
-
-  async export(): Promise<GraphResult> {
-    const result = await this.client.knowledgeExport(this.agentId);
-    return { nodes: result.nodes ?? [], edges: result.edges ?? [] };
-  }
-
-  async build(): Promise<GraphResult> {
-    const result = await this.client.knowledgeGraph(this.agentId);
-    return { nodes: result.nodes ?? [], edges: result.edges ?? [] };
   }
 
   async summarize(): Promise<unknown> {
-    return this.client.summarize(this.agentId);
+    return this.client.summarize({
+      agent_id: agentId(this.agentId) as AgentId,
+    });
   }
 
   async deduplicate(): Promise<unknown> {
-    return this.client.deduplicate(this.agentId);
+    return this.client.deduplicate({
+      agent_id: agentId(this.agentId) as AgentId,
+    });
   }
 }

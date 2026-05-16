@@ -43,24 +43,30 @@ export class DakeraEntityExtractor {
   }
 
   async extract(text: string): Promise<Entity[]> {
-    const result = await this.client.extractEntities(this.agentId, { text });
+    const result = await this.client.extractEntities(text);
     return (result.entities ?? []).map((e) => ({
       type: e.entity_type,
       value: e.value,
-      confidence: e.confidence,
+      confidence: e.score,
     }));
   }
 
   async memoryEntities(memoryId: string): Promise<Entity[]> {
-    const result = await this.client.memoryEntities(this.agentId, { memory_id: memoryId });
+    const result = await this.client.memoryEntities(memoryId);
     return (result.entities ?? []).map((e) => ({
       type: e.entity_type,
       value: e.value,
-      confidence: e.confidence,
+      confidence: e.score,
     }));
   }
 
   async configure(entityTypes?: string[]): Promise<void> {
-    await this.client.configureNamespaceNer(this.agentId, { entity_types: entityTypes });
+    const config: { extract_entities: boolean; entity_types?: string[] } = {
+      extract_entities: true,
+    };
+    if (entityTypes !== undefined) {
+      config.entity_types = entityTypes;
+    }
+    await this.client.configureNamespaceNer(this.agentId, config);
   }
 }

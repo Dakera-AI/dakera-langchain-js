@@ -30,7 +30,7 @@ export interface AgentMemory {
   importance: number;
   memoryType: string;
   tags: string[];
-  createdAt: number;
+  createdAt: string;
 }
 
 export class DakeraAgentTools {
@@ -51,27 +51,26 @@ export class DakeraAgentTools {
 
   async memories(options?: { limit?: number; offset?: number }): Promise<AgentMemory[]> {
     const result = await this.client.agentMemories(this.agentId, options);
-    return (result.memories ?? []).map((m) => ({
+    return result.map((m) => ({
       id: m.id,
       content: m.content,
       importance: m.importance,
       memoryType: m.memory_type,
-      tags: m.tags ?? [],
-      createdAt: m.created_at,
+      tags: [],
+      createdAt: m.created_at ?? "",
     }));
   }
 
   async sessions(activeOnly = false): Promise<unknown[]> {
-    const result = await this.client.agentSessions(this.agentId, { active_only: activeOnly });
-    return result.sessions ?? [];
+    return this.client.agentSessions(this.agentId, { active_only: activeOnly });
   }
 
   async importMemories(memories: Record<string, unknown>[]): Promise<unknown> {
-    return this.client.importMemories(this.agentId, { memories });
+    return this.client.importMemories(memories, "jsonl", this.agentId);
   }
 
   async exportMemories(): Promise<unknown[]> {
-    const result = await this.client.exportMemories(this.agentId);
-    return result.memories ?? [];
+    const result = await this.client.exportMemories("jsonl", this.agentId);
+    return result.data ?? [];
   }
 }

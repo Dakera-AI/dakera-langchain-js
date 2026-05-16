@@ -10,7 +10,7 @@
  *   apiKey: "dk-...",
  * });
  *
- * await ns.create("my-namespace", { dimension: 384, metric: "cosine" });
+ * await ns.create("my-namespace", { dimensions: 384, indexType: "hnsw" });
  * const all = await ns.list();
  * ```
  */
@@ -24,8 +24,7 @@ export interface DakeraNamespaceManagerOptions {
 
 export interface NamespaceInfo {
   name: string;
-  dimension: number;
-  metric?: string;
+  dimension: number | undefined;
   vectorCount: number;
 }
 
@@ -41,7 +40,7 @@ export class DakeraNamespaceManager {
 
   async create(
     name: string,
-    options?: { dimension?: number; metric?: string },
+    options?: { dimensions?: number; indexType?: string; metadata?: Record<string, unknown> },
   ): Promise<unknown> {
     return this.client.createNamespace(name, options);
   }
@@ -49,25 +48,28 @@ export class DakeraNamespaceManager {
   async get(name: string): Promise<NamespaceInfo> {
     const result = await this.client.getNamespace(name);
     return {
-      name: result.name,
+      name: result.namespace,
       dimension: result.dimension,
-      metric: result.metric,
       vectorCount: result.vector_count,
     };
   }
 
   async list(): Promise<NamespaceInfo[]> {
     const result = await this.client.listNamespaces();
-    return (result.namespaces ?? []).map((ns) => ({
-      name: ns.name,
+    return result.map((ns) => ({
+      name: ns.namespace,
       dimension: ns.dimension,
-      metric: ns.metric,
       vectorCount: ns.vector_count,
     }));
   }
 
-  async configure(name: string, config: Record<string, unknown>): Promise<void> {
-    await this.client.configureNamespace(name, config);
+  async configure(name: string, config: { dimension: number; distance?: string }): Promise<void> {
+    await this.client.configureNamespace(name, {
+      dimension: config.dimension,
+      ...(config.distance !== undefined
+        ? { distance: config.distance as "cosine" | "euclidean" | "dot_product" }
+        : {}),
+    });
   }
 
   async delete(name: string): Promise<void> {
