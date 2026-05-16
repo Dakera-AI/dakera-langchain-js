@@ -5,6 +5,7 @@
 [![Downloads](https://img.shields.io/npm/dm/@dakera-ai/langchain)](https://www.npmjs.com/package/@dakera-ai/langchain)
 [![Node](https://img.shields.io/node/v/@dakera-ai/langchain)](https://www.npmjs.com/package/@dakera-ai/langchain)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-dakera.ai-D4A843)](https://dakera.ai/docs)
 
 **LangChain.js integration for [Dakera](https://github.com/Dakera-AI/dakera-deploy) — persistent semantic memory and server-side vector search, no local embedding model required.**
 
