@@ -6,7 +6,7 @@
  * import { DakeraVectorStore } from "@dakera-ai/langchain";
  *
  * const vectorstore = new DakeraVectorStore({
- *   apiUrl: "https://api.dakera.ai",
+ *   apiUrl: "http://localhost:3300",
  *   apiKey: "dk-...",
  *   namespace: "docs",
  * });

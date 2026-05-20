@@ -6,7 +6,7 @@
  * import { DakeraKnowledgeGraph } from "@dakera-ai/langchain";
  *
  * const kg = new DakeraKnowledgeGraph({
- *   apiUrl: "https://api.dakera.ai",
+ *   apiUrl: "http://localhost:3300",
  *   apiKey: "dk-...",
  *   agentId: "my-agent",
  * });
