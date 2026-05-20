@@ -6,7 +6,7 @@
  * import { DakeraSessionManager } from "@dakera-ai/langchain";
  *
  * const sessions = new DakeraSessionManager({
- *   apiUrl: "https://api.dakera.ai",
+ *   apiUrl: "http://localhost:3300",
  *   apiKey: "dk-...",
  *   agentId: "my-agent",
  * });

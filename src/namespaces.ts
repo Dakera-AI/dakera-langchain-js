@@ -6,7 +6,7 @@
  * import { DakeraNamespaceManager } from "@dakera-ai/langchain";
  *
  * const ns = new DakeraNamespaceManager({
- *   apiUrl: "https://api.dakera.ai",
+ *   apiUrl: "http://localhost:3300",
  *   apiKey: "dk-...",
  * });
  *

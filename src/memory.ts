@@ -8,7 +8,7 @@
  * import { ChatOpenAI } from "@langchain/openai";
  *
  * const memory = new DakeraMemory({
- *   apiUrl: "https://api.dakera.ai",
+ *   apiUrl: "http://localhost:3300",
  *   apiKey: "dk-...",
  *   agentId: "my-agent",
  * });
