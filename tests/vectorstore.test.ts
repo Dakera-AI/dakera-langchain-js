@@ -13,6 +13,13 @@ vi.mock("@dakera-ai/dakera", () => ({
           { id: "doc2", text: "Foo bar", score: 0.80, metadata: {} },
         ],
       }),
+      hybridSearch: vi.fn().mockResolvedValue([
+        { id: "h1", score: 0.92, metadata: { source: "hybrid" } },
+        { id: "h2", score: 0.75, metadata: {} },
+      ]),
+      fulltextSearch: vi.fn().mockResolvedValue([
+        { id: "f1", score: 0.88, metadata: { source: "fts" } },
+      ]),
     };
   }),
 }));
@@ -94,5 +101,40 @@ describe("DakeraVectorStore", () => {
       storeOptions,
     );
     expect(newStore).toBeInstanceOf(DakeraVectorStore);
+  });
+
+  it("hybridSearch forwards alpha as vectorWeight to the client", async () => {
+    const results = await store.hybridSearch("coffee", 4, { alpha: 0.3 });
+    expect(results).toHaveLength(2);
+    expect(results[0]).toBeInstanceOf(Document);
+    // Verify the internal client receives vectorWeight, not alpha
+    const clientInstance = (store as never as { dakeraClient: { hybridSearch: ReturnType<typeof vi.fn> } }).dakeraClient;
+    expect(clientInstance.hybridSearch).toHaveBeenCalledWith(
+      "test-ns",
+      "coffee",
+      expect.objectContaining({ topK: 4, vectorWeight: 0.3 }),
+    );
+    expect(clientInstance.hybridSearch).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.objectContaining({ alpha: expect.anything() }),
+    );
+  });
+
+  it("hybridSearch defaults vectorWeight to 0.5 when alpha is omitted", async () => {
+    await store.hybridSearch("tea", 2);
+    const clientInstance = (store as never as { dakeraClient: { hybridSearch: ReturnType<typeof vi.fn> } }).dakeraClient;
+    expect(clientInstance.hybridSearch).toHaveBeenCalledWith(
+      "test-ns",
+      "tea",
+      expect.objectContaining({ vectorWeight: 0.5 }),
+    );
+  });
+
+  it("hybridSearch maps results to Documents with score in metadata", async () => {
+    const results = await store.hybridSearch("query", 4);
+    expect(results[0]).toBeInstanceOf(Document);
+    expect(results[0]!.metadata.score).toBeCloseTo(0.92);
+    expect(results[0]!.metadata.id).toBe("h1");
   });
 });

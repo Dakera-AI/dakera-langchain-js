@@ -106,7 +106,7 @@ export class DakeraVectorStore extends VectorStore {
     const response = await this.dakeraClient.hybridSearch(this.namespace, query, {
       topK: k,
       ...(options?.filter !== undefined ? { filter: options.filter as FilterExpression } : {}),
-      alpha: options?.alpha ?? 0.5,
+      vectorWeight: options?.alpha ?? 0.5,
     });
     return response.map((r) =>
       new Document({
