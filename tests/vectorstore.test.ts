@@ -137,4 +137,39 @@ describe("DakeraVectorStore", () => {
     expect(results[0]!.metadata.score).toBeCloseTo(0.92);
     expect(results[0]!.metadata.id).toBe("h1");
   });
+
+  it("hybridSearch passes filter option to client", async () => {
+    const filter = { source: "docs" };
+    await store.hybridSearch("query", 3, { filter });
+    const clientInstance = (store as never as { dakeraClient: { hybridSearch: ReturnType<typeof vi.fn> } }).dakeraClient;
+    expect(clientInstance.hybridSearch).toHaveBeenCalledWith(
+      "test-ns",
+      "query",
+      expect.objectContaining({ filter }),
+    );
+  });
+
+  it("fulltextSearch queries the client and returns Documents", async () => {
+    const results = await store.fulltextSearch("search query", 5);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toBeInstanceOf(Document);
+    expect(results[0]!.metadata.score).toBeCloseTo(0.88);
+    expect(results[0]!.metadata.id).toBe("f1");
+    const clientInstance = (store as never as { dakeraClient: { fulltextSearch: ReturnType<typeof vi.fn> } }).dakeraClient;
+    expect(clientInstance.fulltextSearch).toHaveBeenCalledWith(
+      "test-ns",
+      "search query",
+      expect.objectContaining({ topK: 5 }),
+    );
+  });
+
+  it("fulltextSearch defaults k to 10", async () => {
+    await store.fulltextSearch("query");
+    const clientInstance = (store as never as { dakeraClient: { fulltextSearch: ReturnType<typeof vi.fn> } }).dakeraClient;
+    expect(clientInstance.fulltextSearch).toHaveBeenCalledWith(
+      "test-ns",
+      "query",
+      expect.objectContaining({ topK: 10 }),
+    );
+  });
 });
