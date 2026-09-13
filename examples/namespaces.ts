@@ -2,13 +2,13 @@
  * Namespace management with LangChain.js and Dakera.
  *
  * Usage:
- *   export DAKERA_API_URL="http://localhost:3300"
+ *   export DAKERA_API_URL="http://localhost:3000"
  *   npx tsx examples/namespaces.ts
  */
 
 import { DakeraNamespaceManager } from "../src/namespaces";
 
-const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3300";
+const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
 const apiKey = process.env.DAKERA_API_KEY ?? "";
 
 const ns = new DakeraNamespaceManager({ apiUrl, apiKey });

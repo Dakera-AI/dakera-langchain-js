@@ -2,13 +2,13 @@
  * Session-scoped memory with LangChain.js and Dakera.
  *
  * Usage:
- *   export DAKERA_API_URL="http://localhost:3300"
+ *   export DAKERA_API_URL="http://localhost:3000"
  *   npx tsx examples/sessions.ts
  */
 
 import { DakeraSessionManager } from "../src/sessions";
 
-const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3300";
+const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
 const apiKey = process.env.DAKERA_API_KEY ?? "";
 
 const sessions = new DakeraSessionManager({

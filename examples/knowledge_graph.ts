@@ -2,13 +2,13 @@
  * Knowledge graph operations with LangChain.js and Dakera.
  *
  * Usage:
- *   export DAKERA_API_URL="http://localhost:3300"
+ *   export DAKERA_API_URL="http://localhost:3000"
  *   npx tsx examples/knowledge_graph.ts
  */
 
 import { DakeraKnowledgeGraph } from "../src/knowledge-graph";
 
-const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3300";
+const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
 const apiKey = process.env.DAKERA_API_KEY ?? "";
 
 const kg = new DakeraKnowledgeGraph({

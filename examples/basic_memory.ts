@@ -5,7 +5,7 @@
  * on the next turn using semantic search.
  *
  * Usage:
- *   export DAKERA_API_URL="http://localhost:3300"
+ *   export DAKERA_API_URL="http://localhost:3000"
  *   export DAKERA_API_KEY="dk-..."          // optional
  *   npm install @dakera-ai/langchain @langchain/core
  *   npx tsx examples/basic_memory.ts
@@ -13,7 +13,7 @@
 
 import { DakeraMemory } from "@dakera-ai/langchain";
 
-const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3300";
+const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
 const apiKey = process.env.DAKERA_API_KEY ?? "";
 
 const memory = new DakeraMemory({
