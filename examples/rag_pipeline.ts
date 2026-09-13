@@ -5,7 +5,7 @@
  * embeddings needed) and retrieves the most relevant chunks for a query.
  *
  * Usage:
- *   export DAKERA_API_URL="http://localhost:3300"
+ *   export DAKERA_API_URL="http://localhost:3000"
  *   export DAKERA_API_KEY="dk-..."          // optional
  *   npm install @dakera-ai/langchain @langchain/core
  *   npx tsx examples/rag_pipeline.ts
@@ -14,7 +14,7 @@
 import { Document } from "@langchain/core/documents";
 import { DakeraVectorStore } from "@dakera-ai/langchain";
 
-const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3300";
+const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
 const apiKey = process.env.DAKERA_API_KEY ?? "";
 
 const store = new DakeraVectorStore({

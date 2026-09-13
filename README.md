@@ -26,7 +26,7 @@ Dakera is a self-hosted memory server. Spin it up with Docker:
 ```bash
 docker run -d \
   --name dakera \
-  -p 3300:3300 \
+  -p 3000:3000 \
   -e DAKERA_ROOT_API_KEY=dk-mykey \
   ghcr.io/dakera-ai/dakera:latest
 ```
@@ -38,7 +38,7 @@ curl -sSfL https://raw.githubusercontent.com/Dakera-AI/dakera-deploy/main/docker
   -o docker-compose.yml
 DAKERA_API_KEY=dk-mykey docker compose up -d
 
-curl http://localhost:3300/health  # → {"status":"ok"}
+curl http://localhost:3000/health  # → {"status":"ok"}
 ```
 
 > Full deployment guide: [github.com/Dakera-AI/dakera-deploy](https://github.com/Dakera-AI/dakera-deploy)
@@ -57,7 +57,7 @@ import { ConversationChain } from "langchain/chains";
 import { ChatOpenAI } from "@langchain/openai";
 
 const memory = new DakeraMemory({
-  apiUrl: "http://localhost:3300",
+  apiUrl: "http://localhost:3000",
   apiKey: "dk-mykey",
   agentId: "my-agent",
 });
@@ -94,7 +94,7 @@ import { ConversationChain } from "langchain/chains";
 import { ChatOpenAI } from "@langchain/openai";
 
 const memory = new DakeraMemory({
-  apiUrl: "http://localhost:3300",
+  apiUrl: "http://localhost:3000",
   apiKey: process.env.DAKERA_API_KEY!,
   agentId: "my-agent",
   recallK: 5,       // how many past memories to surface per turn
@@ -118,7 +118,7 @@ console.log(response); // "You mentioned you were building a chatbot."
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `apiUrl` | `string` | — | Dakera server URL (e.g. `http://localhost:3300`) |
+| `apiUrl` | `string` | — | Dakera server URL (e.g. `http://localhost:3000`) |
 | `apiKey` | `string` | `""` | Dakera API key |
 | `agentId` | `string` | — | Agent identifier for memory namespacing |
 | `recallK` | `number` | `5` | Number of memories to recall per turn |
@@ -137,7 +137,7 @@ Server-side embedded vector store for RAG. Dakera handles embeddings — no loca
 import { DakeraVectorStore } from "@dakera-ai/langchain";
 
 const vectorstore = new DakeraVectorStore({
-  apiUrl: "http://localhost:3300",
+  apiUrl: "http://localhost:3000",
   apiKey: process.env.DAKERA_API_KEY!,
   namespace: "my-docs",
 });
@@ -161,7 +161,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { DakeraVectorStore } from "@dakera-ai/langchain";
 
 const vectorstore = new DakeraVectorStore({
-  apiUrl: "http://localhost:3300",
+  apiUrl: "http://localhost:3000",
   apiKey: process.env.DAKERA_API_KEY!,
   namespace: "my-docs",
 });
@@ -182,7 +182,7 @@ const store = await DakeraVectorStore.fromTexts(
   ["Document one content", "Document two content"],
   [{ source: "a" }, { source: "b" }],
   null, // embeddings param — unused, Dakera handles server-side embedding
-  { apiUrl: "http://localhost:3300", apiKey: "dk-mykey", namespace: "docs" },
+  { apiUrl: "http://localhost:3000", apiKey: "dk-mykey", namespace: "docs" },
 );
 ```
 

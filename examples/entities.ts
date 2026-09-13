@@ -2,13 +2,13 @@
  * Entity extraction with LangChain.js and Dakera.
  *
  * Usage:
- *   export DAKERA_API_URL="http://localhost:3300"
+ *   export DAKERA_API_URL="http://localhost:3000"
  *   npx tsx examples/entities.ts
  */
 
 import { DakeraEntityExtractor } from "../src/entities";
 
-const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3300";
+const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
 const apiKey = process.env.DAKERA_API_KEY ?? "";
 
 const extractor = new DakeraEntityExtractor({

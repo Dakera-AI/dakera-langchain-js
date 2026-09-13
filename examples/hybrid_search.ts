@@ -2,14 +2,14 @@
  * Hybrid search (vector + BM25) with LangChain.js and Dakera.
  *
  * Usage:
- *   export DAKERA_API_URL="http://localhost:3300"
+ *   export DAKERA_API_URL="http://localhost:3000"
  *   npx tsx examples/hybrid_search.ts
  */
 
 import { Document } from "@langchain/core/documents";
 import { DakeraVectorStore } from "../src/vectorstore";
 
-const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3300";
+const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
 const apiKey = process.env.DAKERA_API_KEY ?? "";
 
 const store = new DakeraVectorStore({
