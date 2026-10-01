@@ -82,6 +82,8 @@ npm install @dakera-ai/langchain @dakera-ai/dakera @langchain/core
 
 **Requirements:** Node.js ≥ 20, a running Dakera server (see Step 1 above)
 
+**Compatibility:** `@dakera-ai/dakera` ^0.12.1; Dakera server v0.12.0 (also compatible with v0.11.108).
+
 ---
 
 ## DakeraMemory
