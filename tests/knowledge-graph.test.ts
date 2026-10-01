@@ -54,10 +54,17 @@ describe("DakeraKnowledgeGraph", () => {
 
   it("links two memories", async () => {
     await expect(kg.link("mem_1", "ent_1", "causes")).resolves.toBeUndefined();
+    const client = (kg as unknown as { client: { memoryLink: ReturnType<typeof vi.fn> } }).client;
+    expect(client.memoryLink).toHaveBeenCalledWith("mem_1", "ent_1", {
+      agentId: "test-agent",
+      label: "causes",
+    });
   });
 
   it("links with default relation", async () => {
     await expect(kg.link("mem_1", "ent_1")).resolves.toBeUndefined();
+    const client = (kg as unknown as { client: { memoryLink: ReturnType<typeof vi.fn> } }).client;
+    expect(client.memoryLink).toHaveBeenCalledWith("mem_1", "ent_1", { agentId: "test-agent" });
   });
 
   it("exports the knowledge graph", async () => {

@@ -61,11 +61,12 @@ export class DakeraKnowledgeGraph {
   }
 
   async link(memoryId: string, entityId: string, relation?: string): Promise<void> {
-    await this.client.memoryLink(
-      memoryId,
-      entityId,
-      (relation ?? "related_to") as "related_to",
-    );
+    // The server requires the owning agent and records every explicit link as `linked_by`;
+    // `relation` is sent as an informational label only (the server does not store it).
+    await this.client.memoryLink(memoryId, entityId, {
+      agentId: this.agentId,
+      ...(relation !== undefined ? { label: relation } : {}),
+    });
   }
 
   async export(format?: string): Promise<GraphResult> {

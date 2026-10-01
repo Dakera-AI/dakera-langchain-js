@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-01
+
+### Changed
+- Requires `@dakera-ai/dakera` `^0.12.1` (peer and dev dependency). Compatible with Dakera server v0.12.0 and v0.11.108.
+- `DakeraKnowledgeGraph.link()` now calls the SDK's `memoryLink(sourceId, targetId, { agentId, label })`. The SDK requires the owning agent, the server records every explicit link as `linked_by`, and the optional `relation` argument is sent as an informational label only.
+- Pass-through of the SDK's typed errors (`ValidationError`, `NotFoundError`, `ConflictError`, `UnsupportedCapabilityError`, and others) is unchanged; they are thrown as-is.
+
 ## [0.1.2] - 2026-05-13
 
 ### Security
