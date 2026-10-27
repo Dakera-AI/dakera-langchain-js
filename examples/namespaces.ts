@@ -35,4 +35,7 @@ async function main() {
   console.log("Deleted: example-ns");
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

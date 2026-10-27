@@ -6,6 +6,7 @@ vi.mock("@dakera-ai/dakera", () => ({
     return {
       startSession: vi.fn().mockResolvedValue({ id: "sess_123" }),
       endSession: vi.fn().mockResolvedValue(undefined),
+      touchSession: vi.fn().mockResolvedValue({ session: { id: "sess_123" }, session_state: "active" }),
       getSession: vi.fn().mockResolvedValue({
         id: "sess_123",
         agent_id: "test-agent",
@@ -13,6 +14,8 @@ vi.mock("@dakera-ai/dakera", () => ({
         ended_at: undefined,
         metadata: { type: "test" },
         memory_count: 5,
+        summary: "wrapped up",
+        ended_reason: "idle",
       }),
       listSessions: vi.fn().mockResolvedValue([
         { id: "s1", agent_id: "a", started_at: 100, ended_at: 200, metadata: {}, memory_count: 3 },
@@ -49,6 +52,42 @@ describe("DakeraSessionManager", () => {
     expect(sessions.currentSessionId).toBeNull();
   });
 
+  const clientOf = (m: DakeraSessionManager) =>
+    (m as unknown as { client: Record<string, ReturnType<typeof vi.fn>> }).client;
+
+  it("sends the summary when ending a session", async () => {
+    await sessions.start();
+    await sessions.end("Resolved billing question");
+    expect(clientOf(sessions).endSession).toHaveBeenCalledWith("sess_123", {
+      summary: "Resolved billing question",
+    });
+  });
+
+  it("ends without a body when no summary is given", async () => {
+    await sessions.start();
+    await sessions.end();
+    expect(clientOf(sessions).endSession).toHaveBeenCalledWith("sess_123", undefined);
+  });
+
+  it("passes idleTimeoutSecs when starting a session", async () => {
+    await sessions.start({ a: 1 }, { idleTimeoutSecs: 0 });
+    expect(clientOf(sessions).startSession).toHaveBeenCalledWith("test-agent", { a: 1 }, {
+      idle_timeout_secs: 0,
+    });
+  });
+
+  it("touches the active session", async () => {
+    await sessions.start();
+    await expect(sessions.touch()).resolves.toBe(true);
+    expect(clientOf(sessions).touchSession).toHaveBeenCalledWith("sess_123");
+    clientOf(sessions).touchSession.mockResolvedValueOnce({ session: {}, session_state: "ended" });
+    await expect(sessions.touch()).resolves.toBe(false);
+  });
+
+  it("throws when touching without active session", async () => {
+    await expect(sessions.touch()).rejects.toThrow("No active session to touch");
+  });
+
   it("throws when ending without active session", async () => {
     await expect(sessions.end()).rejects.toThrow("No active session to end");
   });
@@ -59,6 +98,8 @@ describe("DakeraSessionManager", () => {
     expect(info.agentId).toBe("test-agent");
     expect(info.memoryCount).toBe(5);
     expect(info.metadata).toEqual({ type: "test" });
+    expect(info.summary).toBe("wrapped up");
+    expect(info.endedReason).toBe("idle");
   });
 
   it("lists sessions", async () => {

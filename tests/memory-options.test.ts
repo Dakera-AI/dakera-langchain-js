@@ -25,7 +25,29 @@ describe("DakeraMemory — option forwarding", () => {
       recallK: 8,
     });
     await memory.loadMemoryVariables({ input: "what is AI?" });
-    expect(mockRecall).toHaveBeenCalledWith("a", "what is AI?", { top_k: 8 });
+    expect(mockRecall).toHaveBeenCalledWith("a", "what is AI?", {
+      top_k: 8,
+      neighborhood_mode: "separate",
+    });
+  });
+
+  it("returns at most recallK ranked memories, without neighbourhood context", async () => {
+    const memory = new DakeraMemory({
+      apiUrl: "http://localhost:3000",
+      agentId: "a",
+      recallK: 2,
+    });
+    // A server before v0.12.3 ignores neighborhood_mode and appends the context inline.
+    mockRecall.mockResolvedValueOnce({
+      memories: [
+        { id: "m1", content: "first", score: 0.9 },
+        { id: "n1", content: "context", score: 0, retrieval: "neighborhood" },
+        { id: "m2", content: "second", score: 0.8 },
+        { id: "m3", content: "third", score: 0.7 },
+      ],
+    });
+    const result = await memory.loadMemoryVariables({ input: "q" });
+    expect(result["history"]).toBe("first\nsecond");
   });
 
   it("omits min_importance from recall opts when minImportance is 0 (default)", async () => {

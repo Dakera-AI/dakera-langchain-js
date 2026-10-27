@@ -19,7 +19,7 @@
 
 import type { InputValues, MemoryVariables, OutputValues } from "@langchain/core/memory";
 import { BaseMemory } from "@langchain/core/memory";
-import { DakeraClient } from "@dakera-ai/dakera";
+import { DakeraClient, type MemoryRecallOptions } from "@dakera-ai/dakera";
 
 export interface DakeraMemoryOptions {
   /** Dakera API base URL */
@@ -90,7 +90,7 @@ export class DakeraMemory extends BaseMemory {
    * Recall semantically relevant memories for the current input.
    *
    * Returns an object with `memoryKey` mapped to a newline-joined string
-   * of recalled memory contents.
+   * of at most `recallK` recalled memory contents, best first.
    */
   async loadMemoryVariables(inputs: InputValues): Promise<MemoryVariables> {
     const query = this.getQuery(inputs);
@@ -98,8 +98,14 @@ export class DakeraMemory extends BaseMemory {
       return { [this.memoryKey]: "" };
     }
 
-    const recallOpts: { top_k?: number; min_importance?: number } = {
+    // A server's default `neighborhood_mode: "inline"` appends session-adjacent
+    // context after the `top_k` ranked results; "separate" keeps it out of
+    // `memories`. Servers before v0.12.3 ignore the mode and append it inline
+    // (`retrieval: "neighborhood"`), so those items are dropped and the list is
+    // cut at `recallK` either way.
+    const recallOpts: MemoryRecallOptions = {
       top_k: this.recallK,
+      neighborhood_mode: "separate",
     };
     if (this.minImportance > 0) {
       recallOpts.min_importance = this.minImportance;
@@ -107,7 +113,9 @@ export class DakeraMemory extends BaseMemory {
     const response = await this.client.recall(this.agentId, query, recallOpts);
 
     const history = (response.memories ?? [])
-      .map((m) => (typeof m === "object" && "content" in m ? m.content : String(m)))
+      .filter((m) => m.retrieval !== "neighborhood")
+      .slice(0, this.recallK)
+      .map((m) => m.content)
       .join("\n");
 
     return { [this.memoryKey]: history };

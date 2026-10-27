@@ -38,6 +38,23 @@ describe("DakeraNamespaceManager", () => {
     ).resolves.toBeDefined();
   });
 
+  const clientOf = (m: DakeraNamespaceManager) =>
+    (m as unknown as { client: Record<string, ReturnType<typeof vi.fn>> }).client;
+
+  it("passes only dimensions, distance and indexType to the SDK", async () => {
+    await ns.create("ns3", {
+      dimensions: 384,
+      distance: "dot_product",
+      indexType: "hnsw",
+      metadata: { env: "prod" },
+    });
+    expect(clientOf(ns).createNamespace).toHaveBeenCalledWith("ns3", {
+      dimensions: 384,
+      distance: "dot_product",
+      indexType: "hnsw",
+    });
+  });
+
   it("gets namespace info", async () => {
     const info = await ns.get("my-ns");
     expect(info.name).toBe("my-ns");

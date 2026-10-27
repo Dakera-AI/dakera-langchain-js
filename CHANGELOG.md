@@ -2,6 +2,52 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-27
+
+Dakera server **v0.12.3** support. Requires `@dakera-ai/dakera` `^0.12.3` (peer and dev dependency).
+Verified against `ghcr.io/dakera-ai/dakera:0.12.3` (every example) and v0.12.0.
+
+### Breaking
+- `DakeraKnowledgeGraph.build(memoryId, { depth?, minSimilarity? })` takes the seed memory the server
+  requires; `build()` without it was always refused (`422 missing field memory_id`). It returns the
+  server's answer as is (`{ root, total_nodes }`).
+- `DakeraKnowledgeGraph.summarize(memoryIds, { targetType? })` takes the memories to summarize (at least
+  two) and returns `KnowledgeSummary` (`summary_memory`, `source_count`), the server's answer; it sent no
+  ids before and always failed.
+- `AgentMemory.createdAt` is typed `number | string`: v0.12 servers send Unix seconds.
+
+### Fixed
+- `DakeraMemory` returns at most `recallK` memories. A server appends session-neighbourhood context after
+  the ranked results by default; recall now asks for `neighborhood_mode: "separate"` and leaves out any
+  item marked `retrieval: "neighborhood"` (older servers ignore the mode).
+- `DakeraEntityExtractor.configure()` configures the agent's memory namespace
+  (`_dakera_agent_<agentId>`) instead of a namespace named like the agent, which did not exist (`404`).
+  An agent that has stored nothing yet is created first (server v0.12.2+).
+- `DakeraAgentTools.importMemories()` / `exportMemories()` work: the server takes a multipart JSON-lines
+  file and answers the export file itself, which `@dakera-ai/dakera` 0.12.3 does not handle (the import
+  was refused with `400`, the export returned no memories). Both now call `/v1/import` and `/v1/export`
+  directly; an import line needs only `content` (`id` and timestamps are filled in), and the import returns
+  the job status (`MemoryImportJob`).
+- `DakeraSessionManager.end(summary)` stores the summary (it was ignored).
+- `DakeraAgentTools.memories()` returns each memory's `tags` (always `[]` before).
+- `DakeraNamespaceManager.create()` no longer passes `metadata` to the SDK (not a server field).
+
+### Added
+- `DakeraSessionManager.start(metadata, { idleTimeoutSecs })` and `touch()`: the server ends a session
+  after 4 h without activity by default; `touch()` keeps it open and returns `false` once it has ended.
+  `SessionInfo` gains `summary` and `endedReason` (`"client"` or `"idle"`).
+- `DakeraNamespaceManager.create(name, { dimensions, distance })`; `indexType` and `metadata` are
+  deprecated (never sent).
+
+### Changed
+- CI: integration and example jobs run against `ghcr.io/dakera-ai/dakera:0.12.3` instead of `latest`,
+  readiness is polled from the runner (the 0.12.3 image has no `curl` for an in-container health check),
+  and a failing example fails the job (examples set a non-zero exit code).
+- Dev dependencies: `npm audit fix` (vitest 4.1.12, vite 8.3.5, zod 4.6.7, source-map-js 1.2.2,
+  esbuild 0.27.2); `npm audit` reports 0 vulnerabilities.
+- `@dakera-ai/dakera` 0.12.3 no longer retries a failed store (a `5xx` or timeout on a write);
+  `DakeraMemory.saveContext()` surfaces such an error instead of storing the turn twice.
+
 ## [0.3.0] - 2026-10-01
 
 ### Changed

@@ -32,6 +32,10 @@ export interface SessionInfo {
   endedAt: number | undefined;
   metadata: Record<string, unknown>;
   memoryCount: number | undefined;
+  /** Summary stored when the session ended. */
+  summary: string | undefined;
+  /** Why the session ended: `"client"` (`end()`) or `"idle"` (server idle timeout). */
+  endedReason: string | undefined;
 }
 
 export interface SessionMemory {
@@ -57,18 +61,47 @@ export class DakeraSessionManager {
     return this.activeSessionId;
   }
 
-  async start(metadata?: Record<string, unknown>): Promise<string> {
-    const result = await this.client.startSession(this.agentId, metadata);
+  /**
+   * Start a session. The server ends a session after a period without activity
+   * (4 h by default); `idleTimeoutSecs` sets this session's timeout (`0`: never).
+   */
+  async start(
+    metadata?: Record<string, unknown>,
+    options?: { idleTimeoutSecs?: number },
+  ): Promise<string> {
+    const result =
+      options?.idleTimeoutSecs !== undefined
+        ? await this.client.startSession(this.agentId, metadata, {
+            idle_timeout_secs: options.idleTimeoutSecs,
+          })
+        : await this.client.startSession(this.agentId, metadata);
     this.activeSessionId = result.id;
     return result.id;
   }
 
-  async end(_summary?: string): Promise<void> {
+  /** End the active session, storing `summary` on it when given. */
+  async end(summary?: string): Promise<void> {
     if (!this.activeSessionId) {
       throw new Error("No active session to end");
     }
-    await this.client.endSession(this.activeSessionId);
+    await this.client.endSession(
+      this.activeSessionId,
+      summary !== undefined ? { summary } : undefined,
+    );
     this.activeSessionId = null;
+  }
+
+  /**
+   * Record activity on the active session so the server's idle timeout does not
+   * end it. Returns `false` when the session had already ended (an ended session
+   * is never re-opened).
+   */
+  async touch(): Promise<boolean> {
+    if (!this.activeSessionId) {
+      throw new Error("No active session to touch");
+    }
+    const result = await this.client.touchSession(this.activeSessionId);
+    return result.session_state === "active";
   }
 
   async get(sessionId: string): Promise<SessionInfo> {
@@ -80,6 +113,8 @@ export class DakeraSessionManager {
       endedAt: result.ended_at,
       metadata: result.metadata ?? {},
       memoryCount: result.memory_count,
+      summary: result.summary,
+      endedReason: result.ended_reason,
     };
   }
 
@@ -95,6 +130,8 @@ export class DakeraSessionManager {
       endedAt: s.ended_at,
       metadata: s.metadata ?? {},
       memoryCount: s.memory_count,
+      summary: s.summary,
+      endedReason: s.ended_reason,
     }));
   }
 

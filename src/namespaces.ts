@@ -10,7 +10,7 @@
  *   apiKey: "dk-...",
  * });
  *
- * await ns.create("my-namespace", { dimensions: 384, indexType: "hnsw" });
+ * await ns.create("my-namespace", { dimensions: 384, distance: "cosine" });
  * const all = await ns.list();
  * ```
  */
@@ -38,11 +38,26 @@ export class DakeraNamespaceManager {
     });
   }
 
+  /**
+   * Create a namespace (`PUT /v1/namespaces/{name}`). The server requires
+   * `dimensions`; `distance` defaults to cosine.
+   */
   async create(
     name: string,
-    options?: { dimensions?: number; indexType?: string; metadata?: Record<string, unknown> },
+    options?: {
+      dimensions?: number;
+      distance?: "cosine" | "euclidean" | "dot_product";
+      /** @deprecated Not a server field; never sent (checked against the server's capabilities). */
+      indexType?: string;
+      /** @deprecated Not a server field; never sent. */
+      metadata?: Record<string, unknown>;
+    },
   ): Promise<unknown> {
-    return this.client.createNamespace(name, options);
+    return this.client.createNamespace(name, {
+      ...(options?.dimensions !== undefined ? { dimensions: options.dimensions } : {}),
+      ...(options?.distance !== undefined ? { distance: options.distance } : {}),
+      ...(options?.indexType !== undefined ? { indexType: options.indexType } : {}),
+    });
   }
 
   async get(name: string): Promise<NamespaceInfo> {

@@ -25,11 +25,18 @@ async function main() {
   const info = await sessions.get(sessionId);
   console.log(`Session agent: ${info.agentId}`);
 
+  // Sessions end after 4 h without activity by default; touch() keeps one open.
+  console.log(`Still active: ${await sessions.touch()}`);
+
   await sessions.end("Completed onboarding walkthrough");
-  console.log("Session ended.");
+  const ended = await sessions.get(sessionId);
+  console.log(`Session ended (${ended.endedReason}): ${ended.summary}`);
 
   const all = await sessions.list();
   console.log(`Total sessions: ${all.length}`);
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

@@ -82,7 +82,9 @@ npm install @dakera-ai/langchain @dakera-ai/dakera @langchain/core
 
 **Requirements:** Node.js ≥ 20, a running Dakera server (see Step 1 above)
 
-**Compatibility:** `@dakera-ai/dakera` ^0.12.1; Dakera server v0.12.0 (also compatible with v0.11.108).
+**Compatibility:** `@dakera-ai/dakera` ^0.12.3; Dakera server v0.12.3. Servers v0.12.0 – v0.12.2 work too, except
+`DakeraSessionManager.touch()` and creating an agent's namespace in `DakeraEntityExtractor.configure()`, which
+need v0.12.2 or later.
 
 ---
 
@@ -123,7 +125,7 @@ console.log(response); // "You mentioned you were building a chatbot."
 | `apiUrl` | `string` | — | Dakera server URL (e.g. `http://localhost:3000`) |
 | `apiKey` | `string` | `""` | Dakera API key |
 | `agentId` | `string` | — | Agent identifier for memory namespacing |
-| `recallK` | `number` | `5` | Number of memories to recall per turn |
+| `recallK` | `number` | `5` | Maximum number of memories recalled per turn (the server's session-neighbourhood context is left out) |
 | `minImportance` | `number` | `0` | Minimum importance threshold for recall |
 | `memoryKey` | `string` | `"history"` | Key injected into the chain prompt |
 | `inputKey` | `string` | first key | Input key used as recall query |

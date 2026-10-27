@@ -16,7 +16,7 @@
  * ```
  */
 
-import { DakeraClient } from "@dakera-ai/dakera";
+import { DakeraClient, NotFoundError } from "@dakera-ai/dakera";
 
 export interface DakeraEntityExtractorOptions {
   apiUrl: string;
@@ -60,6 +60,12 @@ export class DakeraEntityExtractor {
     }));
   }
 
+  /**
+   * Turn on entity extraction for the agent's memories, optionally limited to
+   * `entityTypes`. The setting lives on the agent's memory namespace
+   * (`_dakera_agent_<agentId>`); an agent that has stored nothing yet is
+   * created first (server v0.12.2+).
+   */
   async configure(entityTypes?: string[]): Promise<void> {
     const config: { extract_entities: boolean; entity_types?: string[] } = {
       extract_entities: true,
@@ -67,6 +73,13 @@ export class DakeraEntityExtractor {
     if (entityTypes !== undefined) {
       config.entity_types = entityTypes;
     }
-    await this.client.configureNamespaceNer(this.agentId, config);
+    const namespace = `_dakera_agent_${this.agentId}`;
+    try {
+      await this.client.configureNamespaceNer(namespace, config);
+    } catch (err) {
+      if (!(err instanceof NotFoundError)) throw err;
+      await this.client.createAgent(this.agentId);
+      await this.client.configureNamespaceNer(namespace, config);
+    }
   }
 }
