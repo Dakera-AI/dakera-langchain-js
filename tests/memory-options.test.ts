@@ -1,17 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { DakeraError, ErrorCode, NotFoundError } from "@dakera-ai/dakera";
 import { DakeraMemory } from "../src/memory.js";
 
 // Capture mock method references so we can assert on call args.
 let mockRecall: ReturnType<typeof vi.fn>;
 let mockStoreMemory: ReturnType<typeof vi.fn>;
 
-vi.mock("@dakera-ai/dakera", () => ({
-  DakeraClient: vi.fn().mockImplementation(function () {
-    mockRecall = vi.fn().mockResolvedValue({ memories: [] });
-    mockStoreMemory = vi.fn().mockResolvedValue({ memory_id: "m1" });
-    return { recall: mockRecall, storeMemory: mockStoreMemory };
-  }),
-}));
+vi.mock("@dakera-ai/dakera", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@dakera-ai/dakera")>();
+  return {
+    // The real error classes, so DakeraMemory can tell a 404 apart.
+    NotFoundError: actual.NotFoundError,
+    DakeraError: actual.DakeraError,
+    ErrorCode: actual.ErrorCode,
+    DakeraClient: vi.fn().mockImplementation(function () {
+      mockRecall = vi.fn().mockResolvedValue({ memories: [] });
+      mockStoreMemory = vi.fn().mockResolvedValue({ memory_id: "m1" });
+      return { recall: mockRecall, storeMemory: mockStoreMemory };
+    }),
+  };
+});
 
 describe("DakeraMemory — option forwarding", () => {
   beforeEach(() => {
@@ -99,5 +107,34 @@ describe("DakeraMemory — option forwarding", () => {
       "a",
       expect.objectContaining({ importance: 0.9 }),
     );
+  });
+
+  it("saveContext stores the turn in sessionId when given", async () => {
+    const memory = new DakeraMemory({
+      apiUrl: "http://localhost:3000",
+      agentId: "a",
+      sessionId: "urn:chat:42",
+    });
+    await memory.saveContext({ input: "x" }, { output: "y" });
+    expect(mockStoreMemory).toHaveBeenCalledWith(
+      "a",
+      expect.objectContaining({ session_id: "urn:chat:42" }),
+    );
+  });
+
+  it("recalls nothing for an agent an older server does not know yet (404 NAMESPACE_NOT_FOUND)", async () => {
+    const memory = new DakeraMemory({ apiUrl: "http://localhost:3000", agentId: "fresh" });
+    mockRecall.mockRejectedValueOnce(
+      new NotFoundError("Namespace not found: _dakera_agent_fresh", 404, undefined, ErrorCode.NAMESPACE_NOT_FOUND),
+    );
+    expect(await memory.loadMemoryVariables({ input: "hi" })).toEqual({ history: "" });
+  });
+
+  it("rethrows other recall errors", async () => {
+    const memory = new DakeraMemory({ apiUrl: "http://localhost:3000", agentId: "a" });
+    mockRecall.mockRejectedValueOnce(new NotFoundError("Route not found", 404, undefined, ErrorCode.ROUTE_NOT_FOUND));
+    await expect(memory.loadMemoryVariables({ input: "hi" })).rejects.toThrow("Route not found");
+    mockRecall.mockRejectedValueOnce(new DakeraError("boom", 500));
+    await expect(memory.loadMemoryVariables({ input: "hi" })).rejects.toThrow("boom");
   });
 });

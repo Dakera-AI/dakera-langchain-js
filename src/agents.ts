@@ -6,7 +6,7 @@
  * import { DakeraAgentTools } from "@dakera-ai/langchain";
  *
  * const agent = new DakeraAgentTools({
- *   apiUrl: "http://localhost:3300",
+ *   apiUrl: "http://localhost:3000",
  *   apiKey: "dk-...",
  *   agentId: "my-agent",
  * });
@@ -18,17 +18,27 @@
 
 import { DakeraClient, DakeraError } from "@dakera-ai/dakera";
 
+/** Options for {@link DakeraAgentTools}. */
 export interface DakeraAgentToolsOptions {
+  /** Dakera server URL, e.g. `http://localhost:3000`. */
   apiUrl: string;
+  /** Dakera API key; omit for a server running without auth. */
   apiKey?: string;
+  /** The agent to inspect and manage. */
   agentId: string;
 }
 
+/** A stored memory as {@link DakeraAgentTools.memories} returns it. */
 export interface AgentMemory {
+  /** Memory id. */
   id: string;
+  /** Memory text. */
   content: string;
+  /** Importance score (0 – 1). */
   importance: number;
+  /** `"episodic"`, `"semantic"`, `"procedural"` or `"working"`. */
   memoryType: string;
+  /** Tags given when the memory was stored. */
   tags: string[];
   /** Creation time: Unix seconds from a v0.12 server (`""` when absent). */
   createdAt: number | string;
@@ -47,6 +57,7 @@ export interface MemoryImportJob {
   finished_at?: number;
 }
 
+/** Statistics, listings and JSON-lines import / export for one agent's memories. */
 export class DakeraAgentTools {
   private readonly client: DakeraClient;
   private readonly agentId: string;
@@ -63,10 +74,15 @@ export class DakeraAgentTools {
     this.apiKey = options.apiKey;
   }
 
+  /** The agent's memory statistics, as the server returns them. */
   async stats(): Promise<unknown> {
     return this.client.agentStats(this.agentId);
   }
 
+  /**
+   * List the agent's memories, newest first. Derived sentence sub-memories the
+   * server creates for recall are left out.
+   */
   async memories(options?: { limit?: number; offset?: number }): Promise<AgentMemory[]> {
     const result = await this.client.agentMemories(this.agentId, options);
     return result.map((m) => ({
@@ -79,6 +95,7 @@ export class DakeraAgentTools {
     }));
   }
 
+  /** The agent's sessions, only the active ones with `activeOnly`. */
   async sessions(activeOnly = false): Promise<unknown[]> {
     return this.client.agentSessions(this.agentId, { active_only: activeOnly });
   }

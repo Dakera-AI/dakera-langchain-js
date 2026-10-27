@@ -1,26 +1,25 @@
 /**
- * RAG pipeline using DakeraVectorStore with LangChain.js.
+ * Retrieval with DakeraVectorStore.
  *
- * Indexes documents into Dakera's server-side vector store (no local
- * embeddings needed) and retrieves the most relevant chunks for a query.
+ * Indexes documents into a Dakera namespace (the server embeds them — no
+ * embeddings API or local model) and retrieves the chunks most relevant to a
+ * question, directly and through a LangChain retriever.
  *
- * Usage:
- *   export DAKERA_API_URL="http://localhost:3000"
- *   export DAKERA_API_KEY="dk-..."          // optional
- *   npm install @dakera-ai/langchain @langchain/core
- *   npx tsx examples/rag_pipeline.ts
+ * Run from the repository root, with a Dakera server running:
+ *   npm install && npm run build
+ *   DAKERA_API_URL=http://localhost:3000 DAKERA_API_KEY=dk-mykey npx tsx examples/rag_pipeline.ts
  */
 
 import { Document } from "@langchain/core/documents";
 import { DakeraVectorStore } from "@dakera-ai/langchain";
 
 const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
-const apiKey = process.env.DAKERA_API_KEY ?? "";
+const apiKey = process.env.DAKERA_API_KEY;
 
 const store = new DakeraVectorStore({
   apiUrl,
+  ...(apiKey ? { apiKey } : {}),
   namespace: "langchain-js-rag-demo",
-  apiKey,
 });
 
 async function main() {
@@ -43,8 +42,10 @@ async function main() {
     }),
   ];
 
+  // Fixed ids make re-running the example overwrite the documents instead of
+  // adding copies.
   console.log("Indexing documents...");
-  const ids = await store.addDocuments(docs);
+  const ids = await store.addDocuments(docs, { ids: ["overview-1", "overview-2", "concepts-1", "concepts-2"] });
   console.log(`Indexed ${ids.length} documents.`);
 
   console.log("\nSearching for: 'What is Dakera?'");
@@ -55,9 +56,16 @@ async function main() {
 
   console.log("\nSearching with scores: 'semantic search'");
   const scored = await store.similaritySearchWithScore("semantic search", 2);
-  scored.forEach(([doc, score]) => {
+  for (const [doc, score] of scored) {
     console.log(`  [${score.toFixed(3)}] ${doc.pageContent}`);
-  });
+  }
+
+  // A retriever plugs the store into any LCEL chain: pass the retrieved
+  // documents to a prompt as context.
+  console.log("\nRetriever: 'grounded answers'");
+  const retriever = store.asRetriever({ k: 1 });
+  const [context] = await retriever.invoke("How do I get grounded answers?");
+  console.log(`  ${context?.pageContent}`);
 }
 
 main().catch((err) => {

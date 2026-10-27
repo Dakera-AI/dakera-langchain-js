@@ -5,10 +5,14 @@ vi.mock("@dakera-ai/dakera", () => ({
   DakeraClient: vi.fn().mockImplementation(function () {
     return {
       createNamespace: vi.fn().mockResolvedValue({ namespace: "test-ns", dimension: 384, vector_count: 0 }),
-      getNamespace: vi.fn().mockResolvedValue({ namespace: "my-ns", dimension: 768, vector_count: 1500 }),
+      getNamespace: vi
+        .fn()
+        .mockResolvedValue({ namespace: "my-ns", dimension: 768, vector_count: 1500, kind: "data" }),
+      // The SDK builds the listing from the server's names (and kinds) only;
+      // vector_count is a placeholder 0.
       listNamespaces: vi.fn().mockResolvedValue([
-        { namespace: "ns-a", dimension: 384, vector_count: 100 },
-        { namespace: "ns-b", dimension: 768, vector_count: 200 },
+        { namespace: "ns-a", vector_count: 0, kind: "data" },
+        { namespace: "_dakera_agent_bot", vector_count: 0, kind: "agent" },
       ]),
       configureNamespace: vi.fn().mockResolvedValue(undefined),
       deleteNamespace: vi.fn().mockResolvedValue(undefined),
@@ -60,14 +64,14 @@ describe("DakeraNamespaceManager", () => {
     expect(info.name).toBe("my-ns");
     expect(info.dimension).toBe(768);
     expect(info.vectorCount).toBe(1500);
+    expect(info.kind).toBe("data");
   });
 
   it("lists namespaces", async () => {
     const list = await ns.list();
     expect(list).toHaveLength(2);
-    expect(list[0].name).toBe("ns-a");
-    expect(list[0].dimension).toBe(384);
-    expect(list[0].vectorCount).toBe(100);
+    expect(list[0]).toEqual({ name: "ns-a", dimension: undefined, vectorCount: undefined, kind: "data" });
+    expect(list[1].kind).toBe("agent");
   });
 
   it("configures a namespace", async () => {

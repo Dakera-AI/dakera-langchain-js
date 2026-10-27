@@ -15,8 +15,16 @@ Verified against `ghcr.io/dakera-ai/dakera:0.12.3` (every example) and v0.12.0.
   two) and returns `KnowledgeSummary` (`summary_memory`, `source_count`), the server's answer; it sent no
   ids before and always failed.
 - `AgentMemory.createdAt` is typed `number | string`: v0.12 servers send Unix seconds.
+- `DakeraNamespaceManager.list()` returns `dimension` and `vectorCount` as `undefined` (`vectorCount` is typed
+  `number | undefined`): the server's listing carries names only, and the `0` it returned before was a
+  placeholder, not a count. `get()` reads both.
 
 ### Fixed
+- `DakeraMemory.loadMemoryVariables()` on a server before v0.12.3 no longer throws for an agent that has
+  stored nothing yet: such a server answers `404 NAMESPACE_NOT_FOUND`, so the first turn of every new agent
+  failed. It now recalls nothing (`""`), like a v0.12.3 server.
+- `DakeraVectorStore`'s `embeddingModel` option was documented but never sent; it is now the `model` of
+  every write and search.
 - `DakeraMemory` returns at most `recallK` memories. A server appends session-neighbourhood context after
   the ranked results by default; recall now asks for `neighborhood_mode: "separate"` and leaves out any
   item marked `retrieval: "neighborhood"` (older servers ignore the mode).
@@ -33,6 +41,16 @@ Verified against `ghcr.io/dakera-ai/dakera:0.12.3` (every example) and v0.12.0.
 - `DakeraNamespaceManager.create()` no longer passes `metadata` to the SDK (not a server field).
 
 ### Added
+- `DakeraMemory` option `sessionId`: the stored turns belong to that session (e.g. the id returned by
+  `DakeraSessionManager.start()`).
+- `NamespaceInfo.kind` (`"data"`, `"agent"` or `"system"`, server v0.12.2+).
+- `tests/integration.test.ts`: every class against a live server, skipped unless `DAKERA_API_URL` is set; the
+  CI integration job runs it (before, that job ran the unit tests only).
+- ESLint (flat config with `typescript-eslint`); `npm run lint` covers `src`, `tests` and `examples` and runs
+  in CI. `npm run typecheck` also checks the tests; `npm run typecheck:examples` checks the examples against
+  the build and runs in CI. `tsx` is a dev dependency.
+- Examples `chat_chain.ts` (`DakeraMemory` in an LCEL chain, runnable without an LLM key) and
+  `agent_tools.ts`, and `examples/README.md`.
 - `DakeraSessionManager.start(metadata, { idleTimeoutSecs })` and `touch()`: the server ends a session
   after 4 h without activity by default; `touch()` keeps it open and returns `false` once it has ended.
   `SessionInfo` gains `summary` and `endedReason` (`"client"` or `"idle"`).
@@ -40,6 +58,19 @@ Verified against `ghcr.io/dakera-ai/dakera:0.12.3` (every example) and v0.12.0.
   deprecated (never sent).
 
 ### Changed
+- README rewritten for LangChain v1: chains are built with LCEL, and `ConversationChain` is imported from
+  `@langchain/classic` (`langchain/chains` no longer exists). Every class is documented; the quick start
+  pins `ghcr.io/dakera-ai/dakera:0.12.3` and shows the server's real `/health` answer; compatibility table,
+  errors and retries. Every TypeScript snippet is type-checked against the packed package and was run
+  against a v0.12.3 server.
+- TSDoc on every public class, method, option and result field; doc examples use the server's default port
+  3000.
+- Examples import `@dakera-ai/langchain` (some imported `../src`), use fixed document ids so a re-run
+  overwrites instead of adding copies, `sessions.ts` stores turns in the session, `entities.ts` shows what
+  the rule-based extractor finds, and every example has run instructions. CI runs every file in
+  `examples/`.
+- CONTRIBUTING: Node.js 20+, the real scripts, live tests with `DAKERA_API_URL` (it named
+  `DAKERA_SERVER_URL`) and a mock of `@dakera-ai/dakera` (it mocked `@dakera/js`).
 - CI: integration and example jobs run against `ghcr.io/dakera-ai/dakera:0.12.3` instead of `latest`,
   readiness is polled from the runner (the 0.12.3 image has no `curl` for an in-container health check),
   and a failing example fails the job (examples set a non-zero exit code).

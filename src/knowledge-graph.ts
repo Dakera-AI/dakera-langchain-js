@@ -6,7 +6,7 @@
  * import { DakeraKnowledgeGraph } from "@dakera-ai/langchain";
  *
  * const kg = new DakeraKnowledgeGraph({
- *   apiUrl: "http://localhost:3300",
+ *   apiUrl: "http://localhost:3000",
  *   apiKey: "dk-...",
  *   agentId: "my-agent",
  * });
@@ -23,15 +23,23 @@ import {
   agentId,
 } from "@dakera-ai/dakera";
 
+/** Options for {@link DakeraKnowledgeGraph}. */
 export interface DakeraKnowledgeGraphOptions {
+  /** Dakera server URL, e.g. `http://localhost:3000`. */
   apiUrl: string;
+  /** Dakera API key; omit for a server running without auth. */
   apiKey?: string;
+  /** Agent whose memory graph is read and written. */
   agentId: string;
 }
 
+/** Edges of the agent's memory graph, as {@link DakeraKnowledgeGraph.query} and `export()` return them. */
 export interface GraphResult {
+  /** Graph edges as the server sends them. */
   edges: unknown[];
+  /** Number of memory nodes. */
   nodeCount: number;
+  /** Number of edges. */
   edgeCount: number;
 }
 
@@ -41,6 +49,10 @@ export interface KnowledgeSummary {
   source_count: number;
 }
 
+/**
+ * The agent's memory knowledge graph: the links the server keeps between related
+ * memories, explicit links, graph traversal and memory summaries.
+ */
 export class DakeraKnowledgeGraph {
   private readonly client: DakeraClient;
   private readonly agentId: string;
@@ -53,6 +65,10 @@ export class DakeraKnowledgeGraph {
     this.agentId = options.agentId;
   }
 
+  /**
+   * Query the graph's edges, optionally from `rootId` up to `maxDepth` hops and
+   * of one `edgeType`.
+   */
   async query(options?: {
     rootId?: string;
     edgeType?: string;
@@ -67,10 +83,15 @@ export class DakeraKnowledgeGraph {
     };
   }
 
+  /** Shortest path between two memories, as the server returns it. */
   async path(fromId: string, toId: string): Promise<unknown> {
     return this.client.knowledgePath(this.agentId, fromId, toId);
   }
 
+  /**
+   * Link two of the agent's memories explicitly. The server records the edge as
+   * `linked_by`; `relation` is sent as an informational label only.
+   */
   async link(memoryId: string, entityId: string, relation?: string): Promise<void> {
     // The server requires the owning agent and records every explicit link as `linked_by`;
     // `relation` is sent as an informational label only (the server does not store it).
@@ -80,6 +101,7 @@ export class DakeraKnowledgeGraph {
     });
   }
 
+  /** Export the agent's whole graph (`format` is passed to the server, e.g. `"json"`). */
   async export(format?: string): Promise<GraphResult> {
     const result = await this.client.knowledgeExport(this.agentId, format);
     return {
@@ -131,6 +153,7 @@ export class DakeraKnowledgeGraph {
     }) as unknown as Promise<KnowledgeSummary>;
   }
 
+  /** Merge the agent's near-duplicate memories; returns the server's report. */
   async deduplicate(): Promise<unknown> {
     return this.client.deduplicate({
       agent_id: agentId(this.agentId) as AgentId,
