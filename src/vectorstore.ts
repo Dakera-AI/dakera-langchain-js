@@ -6,7 +6,7 @@
  * import { DakeraVectorStore } from "@dakera-ai/langchain";
  *
  * const vectorstore = new DakeraVectorStore({
- *   apiUrl: "http://localhost:3300",
+ *   apiUrl: "http://localhost:3000",
  *   apiKey: "dk-...",
  *   namespace: "docs",
  * });
@@ -18,19 +18,40 @@
 import type { EmbeddingsInterface } from "@langchain/core/embeddings";
 import { VectorStore } from "@langchain/core/vectorstores";
 import { Document } from "@langchain/core/documents";
-import { DakeraClient, type FilterExpression } from "@dakera-ai/dakera";
+import { DakeraClient, type EmbeddingModel, type FilterExpression } from "@dakera-ai/dakera";
 
+/** Options for {@link DakeraVectorStore}. */
 export interface DakeraVectorStoreOptions {
+  /** Dakera server URL, e.g. `http://localhost:3000`. */
   apiUrl: string;
+  /** Dakera API key; omit for a server running without auth. */
   apiKey?: string;
+  /** Namespace the documents are written to and searched in (created on first write). */
   namespace: string;
-  embeddingModel?: string;
+  /**
+   * Server-side embedding model for documents and queries (e.g. `"bge-large"`,
+   * `"minilm"`); the server's default model when omitted. Use the same model for
+   * every write and search of a namespace. The models a server offers are listed
+   * by `GET /v1/capabilities`.
+   */
+  embeddingModel?: EmbeddingModel;
+  /**
+   * Not needed: Dakera embeds documents and queries on the server. Accepted so
+   * the store can be built where LangChain passes an `Embeddings` instance; it is
+   * never called.
+   */
   embeddings?: EmbeddingsInterface;
 }
 
+/**
+ * LangChain.js `VectorStore` over a Dakera namespace. Documents and queries are
+ * embedded by the server (no embeddings API or local model needed); results
+ * carry the server's `id` and `score` in `metadata`.
+ */
 export class DakeraVectorStore extends VectorStore {
   private readonly dakeraClient: DakeraClient;
   private readonly namespace: string;
+  private readonly embeddingModel: EmbeddingModel | undefined;
 
   declare FilterType: Record<string, unknown>;
 
@@ -45,12 +66,17 @@ export class DakeraVectorStore extends VectorStore {
     };
     this.dakeraClient = new DakeraClient(clientOpts);
     this.namespace = options.namespace;
+    this.embeddingModel = options.embeddingModel;
   }
 
   _vectorstoreType(): string {
     return "dakera";
   }
 
+  /**
+   * LangChain's vector entry point. The vectors are ignored: the documents are
+   * stored with {@link addDocuments} and embedded by the server.
+   */
   async addVectors(
     _vectors: number[][],
     documents: Document[],
@@ -59,6 +85,10 @@ export class DakeraVectorStore extends VectorStore {
     return this.addDocuments(documents, options);
   }
 
+  /**
+   * Store documents (embedded by the server). Returns their ids: `options.ids`
+   * when given (an existing id is overwritten), else new random UUIDs.
+   */
   override async addDocuments(
     documents: Document[],
     options?: { ids?: string[] },
@@ -69,10 +99,19 @@ export class DakeraVectorStore extends VectorStore {
       text: doc.pageContent,
       metadata: doc.metadata as Record<string, unknown>,
     }));
-    await this.dakeraClient.upsertText(this.namespace, docs);
+    await this.dakeraClient.upsertText(
+      this.namespace,
+      docs,
+      this.embeddingModel !== undefined ? { model: this.embeddingModel } : {},
+    );
     return ids;
   }
 
+  /**
+   * LangChain's vector search entry point. A query vector cannot be searched
+   * without its text, so this runs {@link similaritySearchWithScore} with an
+   * empty query; call that (or `similaritySearch`) with the query text instead.
+   */
   async similaritySearchVectorWithScore(
     _query: number[],
     k: number,
@@ -81,6 +120,7 @@ export class DakeraVectorStore extends VectorStore {
     return this._textSearchWithScore("", k, filter);
   }
 
+  /** Semantic search: the `k` most similar documents with their similarity scores. */
   async similaritySearchWithScore(
     query: string,
     k = 4,
@@ -89,6 +129,7 @@ export class DakeraVectorStore extends VectorStore {
     return this._textSearchWithScore(query, k, filter);
   }
 
+  /** Semantic search: the `k` most similar documents. */
   override async similaritySearch(
     query: string,
     k = 4,
@@ -98,6 +139,15 @@ export class DakeraVectorStore extends VectorStore {
     return results.map(([doc]) => doc);
   }
 
+  /**
+   * Hybrid search over the namespace (`POST /v1/namespaces/{ns}/hybrid`).
+   *
+   * The server blends vector similarity and BM25 only when the request carries a
+   * query vector; this method sends the text alone, so the ranking is BM25 and
+   * `alpha` (the vector weight) has no effect. The server returns ids and scores
+   * but not the stored text, so each document's `pageContent` is empty and
+   * `metadata` holds `id` and `score`.
+   */
   async hybridSearch(
     query: string,
     k = 4,
@@ -116,6 +166,11 @@ export class DakeraVectorStore extends VectorStore {
     );
   }
 
+  /**
+   * BM25 full-text search over the namespace. The server returns ids and scores
+   * but not the stored text, so each document's `pageContent` is empty and
+   * `metadata` holds `id` and `score`.
+   */
   async fulltextSearch(
     query: string,
     k = 10,
@@ -142,6 +197,7 @@ export class DakeraVectorStore extends VectorStore {
       topK: k,
       ...(filter !== undefined ? { filter: filter as FilterExpression } : {}),
       includeText: true,
+      ...(this.embeddingModel !== undefined ? { model: this.embeddingModel } : {}),
     });
     return response.results.map((r) => [
       new Document({
@@ -152,6 +208,7 @@ export class DakeraVectorStore extends VectorStore {
     ]);
   }
 
+  /** Create a store for `dbConfig.namespace` and add `docs` to it (`_embeddings` is not used). */
   static override async fromDocuments(
     docs: Document[],
     _embeddings: EmbeddingsInterface,
@@ -162,6 +219,10 @@ export class DakeraVectorStore extends VectorStore {
     return store;
   }
 
+  /**
+   * Create a store for `dbConfig.namespace` and add `texts`, with `metadatas`
+   * per text or one object for all (`_embeddings` is not used).
+   */
   static override async fromTexts(
     texts: string[],
     metadatas: Record<string, unknown>[] | Record<string, unknown>,

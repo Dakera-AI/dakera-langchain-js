@@ -1,27 +1,29 @@
 /**
- * Namespace management with LangChain.js and Dakera.
+ * Vector namespaces with DakeraNamespaceManager.
  *
- * Usage:
- *   export DAKERA_API_URL="http://localhost:3000"
- *   npx tsx examples/namespaces.ts
+ * Lists the namespaces, creates one, reads it back and deletes it.
+ *
+ * Run from the repository root, with a Dakera server running:
+ *   npm install && npm run build
+ *   DAKERA_API_URL=http://localhost:3000 DAKERA_API_KEY=dk-mykey npx tsx examples/namespaces.ts
  */
 
-import { DakeraNamespaceManager } from "../src/namespaces";
+import { DakeraNamespaceManager } from "@dakera-ai/langchain";
 
 const apiUrl = process.env.DAKERA_API_URL ?? "http://localhost:3000";
-const apiKey = process.env.DAKERA_API_KEY ?? "";
+const apiKey = process.env.DAKERA_API_KEY;
 
-const ns = new DakeraNamespaceManager({ apiUrl, apiKey });
+const ns = new DakeraNamespaceManager({ apiUrl, ...(apiKey ? { apiKey } : {}) });
 
 async function main() {
-  console.log("--- List namespaces ---");
-  const all = await ns.list();
-  for (const n of all) {
-    console.log(`  ${n.name} (dim=${n.dimension}, vectors=${n.vectorCount})`);
+  // Agent memory and server namespaces are listed too; keep the vector ones.
+  console.log("--- List vector namespaces ---");
+  for (const n of (await ns.list()).filter((n) => n.kind === "data")) {
+    console.log(`  ${n.name}`);
   }
 
   console.log("\n--- Create namespace ---");
-  await ns.create("example-ns", { dimensions: 384 });
+  await ns.create("example-ns", { dimensions: 384, distance: "cosine" });
   console.log("Created: example-ns");
 
   console.log("\n--- Get namespace info ---");
@@ -35,4 +37,7 @@ async function main() {
   console.log("Deleted: example-ns");
 }
 
-main().catch(console.error);
+main().catch((err) => {
+  console.error(err);
+  process.exitCode = 1;
+});

@@ -25,7 +25,7 @@ jobs:
 
     services:
       dakera:
-        image: ghcr.io/dakera-ai/dakera:latest
+        image: ghcr.io/dakera-ai/dakera:0.12.3
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
@@ -35,12 +35,8 @@ jobs:
           DAKERA_PORT: "3300"
         ports:
           - 3300:3300
-        options: >-
-          --health-cmd "curl -f http://localhost:3300/health || exit 1"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 15s
+        # No in-container --health-cmd: images >= 0.12.3 ship no curl. Readiness is
+        # polled from the runner in "Wait for Dakera".
 
     steps:
       - uses: actions/checkout@v7
@@ -56,7 +52,7 @@ jobs:
 
       - name: Wait for Dakera
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 90); do
             if curl -sf http://localhost:3300/health; then
               echo "Dakera is ready"
               exit 0
@@ -66,7 +62,7 @@ jobs:
           echo "Dakera failed to start"
           exit 1
 
-      - name: Run integration tests
+      - name: Run unit and live tests
         env:
           DAKERA_API_URL: http://localhost:3300
         run: npm test
@@ -78,7 +74,7 @@ jobs:
 
     services:
       dakera:
-        image: ghcr.io/dakera-ai/dakera:latest
+        image: ghcr.io/dakera-ai/dakera:0.12.3
         credentials:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
@@ -88,12 +84,8 @@ jobs:
           DAKERA_PORT: "3300"
         ports:
           - 3300:3300
-        options: >-
-          --health-cmd "curl -f http://localhost:3300/health || exit 1"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-          --health-start-period 15s
+        # No in-container --health-cmd: images >= 0.12.3 ship no curl. Readiness is
+        # polled from the runner in "Wait for Dakera".
 
     steps:
       - uses: actions/checkout@v7
@@ -110,9 +102,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Type check examples
+        run: npm run typecheck:examples
+
       - name: Wait for Dakera
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 90); do
             if curl -sf http://localhost:3300/health; then
               echo "Dakera is ready"
               exit 0
@@ -127,10 +122,9 @@ jobs:
           DAKERA_API_URL: http://localhost:3300
           DAKERA_API_KEY: test-key
         run: |
-          npx tsx examples/basic_memory.ts
-          npx tsx examples/entities.ts
-          npx tsx examples/hybrid_search.ts
-          npx tsx examples/knowledge_graph.ts
-          npx tsx examples/namespaces.ts
-          npx tsx examples/rag_pipeline.ts
-          npx tsx examples/sessions.ts
+          set -e
+          for example in examples/*.ts; do
+            echo "::group::$example"
+            npx tsx "$example"
+            echo "::endgroup::"
+          done

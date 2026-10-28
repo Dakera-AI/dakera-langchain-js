@@ -16,8 +16,11 @@ vi.mock("@dakera-ai/dakera", () => ({
         node_count: 5,
         edge_count: 3,
       }),
-      knowledgeGraph: vi.fn().mockResolvedValue({ status: "ok" }),
-      summarize: vi.fn().mockResolvedValue({ summary: "3 clusters" }),
+      knowledgeGraph: vi.fn().mockResolvedValue({ root: { memory: { id: "mem_1" } }, total_nodes: 3 }),
+      summarize: vi.fn().mockResolvedValue({
+        summary_memory: { id: "mem_s", content: "Alice and Bob" },
+        source_count: 2,
+      }),
       deduplicate: vi.fn().mockResolvedValue({ merged: 2 }),
     };
   }),
@@ -74,14 +77,55 @@ describe("DakeraKnowledgeGraph", () => {
     expect(result.edges).toHaveLength(1);
   });
 
-  it("builds the knowledge graph", async () => {
-    const result = await kg.build();
-    expect(result).toEqual({ status: "ok" });
+  const clientOf = (g: DakeraKnowledgeGraph) =>
+    (g as unknown as { client: Record<string, ReturnType<typeof vi.fn>> }).client;
+
+  it("builds the graph around the seed memory the server requires", async () => {
+    const result = await kg.build("mem_1");
+    expect(result).toEqual({ root: { memory: { id: "mem_1" } }, total_nodes: 3 });
+    expect(clientOf(kg).knowledgeGraph).toHaveBeenCalledWith({
+      agent_id: "test-agent",
+      memory_id: "mem_1",
+    });
   });
 
-  it("summarizes the knowledge graph", async () => {
-    const result = await kg.summarize();
-    expect(result).toEqual({ summary: "3 clusters" });
+  it("forwards depth and minSimilarity to build", async () => {
+    await kg.build("mem_1", { depth: 2, minSimilarity: 0.6 });
+    expect(clientOf(kg).knowledgeGraph).toHaveBeenCalledWith({
+      agent_id: "test-agent",
+      memory_id: "mem_1",
+      depth: 2,
+      min_similarity: 0.6,
+    });
+  });
+
+  it("refuses build without a seed memory", async () => {
+    await expect(kg.build("")).rejects.toThrow("seed memory id");
+    expect(clientOf(kg).knowledgeGraph).not.toHaveBeenCalled();
+  });
+
+  it("summarizes the given memories", async () => {
+    const result = await kg.summarize(["mem_1", "mem_2"]);
+    expect(result.summary_memory.content).toBe("Alice and Bob");
+    expect(result.source_count).toBe(2);
+    expect(clientOf(kg).summarize).toHaveBeenCalledWith({
+      agent_id: "test-agent",
+      memory_ids: ["mem_1", "mem_2"],
+    });
+  });
+
+  it("forwards targetType to summarize", async () => {
+    await kg.summarize(["mem_1", "mem_2"], { targetType: "semantic" });
+    expect(clientOf(kg).summarize).toHaveBeenCalledWith({
+      agent_id: "test-agent",
+      memory_ids: ["mem_1", "mem_2"],
+      target_type: "semantic",
+    });
+  });
+
+  it("refuses to summarize fewer than two memories", async () => {
+    await expect(kg.summarize(["mem_1"])).rejects.toThrow("at least two");
+    expect(clientOf(kg).summarize).not.toHaveBeenCalled();
   });
 
   it("deduplicates entities", async () => {

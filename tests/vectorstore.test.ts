@@ -172,4 +172,28 @@ describe("DakeraVectorStore", () => {
       expect.objectContaining({ topK: 10 }),
     );
   });
+  it("sends no embedding model unless embeddingModel is set", async () => {
+    await store.addDocuments([new Document({ pageContent: "a", metadata: {} })]);
+    await store.similaritySearch("a", 1);
+    const clientInstance = (store as never as {
+      dakeraClient: { upsertText: ReturnType<typeof vi.fn>; queryText: ReturnType<typeof vi.fn> };
+    }).dakeraClient;
+    expect(clientInstance.upsertText).toHaveBeenCalledWith("test-ns", expect.any(Array), {});
+    expect(clientInstance.queryText.mock.calls[0]![2]).not.toHaveProperty("model");
+  });
+
+  it("embeddingModel is sent with writes and searches", async () => {
+    const modelStore = new DakeraVectorStore({ ...storeOptions, embeddingModel: "minilm" });
+    await modelStore.addDocuments([new Document({ pageContent: "a", metadata: {} })]);
+    await modelStore.similaritySearchWithScore("a", 1);
+    const clientInstance = (modelStore as never as {
+      dakeraClient: { upsertText: ReturnType<typeof vi.fn>; queryText: ReturnType<typeof vi.fn> };
+    }).dakeraClient;
+    expect(clientInstance.upsertText).toHaveBeenCalledWith("test-ns", expect.any(Array), { model: "minilm" });
+    expect(clientInstance.queryText).toHaveBeenCalledWith(
+      "test-ns",
+      "a",
+      expect.objectContaining({ model: "minilm", topK: 1 }),
+    );
+  });
 });
